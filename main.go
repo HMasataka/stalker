@@ -19,20 +19,15 @@ func main() {
 }
 
 func New(msg string) error {
-	pt, file, line, _ := runtime.Caller(1)
-
-	funcName := runtime.FuncForPC(pt).Name()
-
-	return es{
-		err:  errors.New(msg),
-		file: file,
-		fn:   funcName,
-		line: line,
-	}
+	return newError(errors.New(msg))
 }
 
 func Wrap(err error) error {
-	pt, file, line, _ := runtime.Caller(1)
+	return newError(err)
+}
+
+func newError(err error) error {
+	pt, file, line, _ := runtime.Caller(2)
 
 	funcName := runtime.FuncForPC(pt).Name()
 
