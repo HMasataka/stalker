@@ -3,21 +3,19 @@ package main
 import (
 	"fmt"
 	"runtime"
+	"strings"
+
+	"github.com/samber/lo"
 
 	"errors"
 )
 
 func main() {
-	w := Wrap(e())
-	var e es
-	fmt.Println(errors.As(w, &e))
-	fmt.Println(e)
+	err := New("error")
+	fmt.Println(err)
 
+	w := Wrap(err)
 	fmt.Println(w)
-}
-
-func e() error {
-	return New("error")
 }
 
 func New(msg string) error {
@@ -47,11 +45,27 @@ type es struct {
 }
 
 func (e es) Error() string {
-	var res string
-	res += fmt.Sprintf("%v %v %v\n", e.err, e.file, e.line)
-	return res
+	return strings.Join(e.Errors(), "\n")
 }
 
 func (e es) Unwrap() error {
 	return e.err
+}
+
+func (e es) Errors() []string {
+	var res []string
+	var tmp es
+	current := e
+
+	for {
+		res = append(res, fmt.Sprintf("%v %v", current.file, current.line))
+		if errors.As(current.err, &tmp) {
+			current = tmp
+		} else {
+			res = append(res, current.err.Error())
+			break
+		}
+	}
+
+	return lo.Reverse(res)
 }
