@@ -31,7 +31,7 @@ func newError(err error) error {
 
 	funcName := runtime.FuncForPC(pt).Name()
 
-	return es{
+	return stalker{
 		err:  err,
 		file: file,
 		fn:   funcName,
@@ -39,25 +39,25 @@ func newError(err error) error {
 	}
 }
 
-type es struct {
+type stalker struct {
 	err  error
 	file string
 	fn   string
 	line int
 }
 
-func (e es) Error() string {
-	return strings.Join(e.Errors(), "\n")
+func (s stalker) Error() string {
+	return strings.Join(s.Errors(), "\n")
 }
 
-func (e es) Unwrap() error {
-	return e.err
+func (s stalker) Unwrap() error {
+	return s.err
 }
 
-func (e es) Errors() []string {
+func (s stalker) Errors() []string {
 	var res []string
-	var tmp es
-	current := e
+	var tmp stalker
+	current := s
 
 	for {
 		res = append(res, fmt.Sprintf("%v %v %v", current.file, current.fn, current.line))
