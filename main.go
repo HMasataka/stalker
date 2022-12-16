@@ -19,21 +19,27 @@ func main() {
 }
 
 func New(msg string) error {
-	_, file, line, _ := runtime.Caller(1)
+	pt, file, line, _ := runtime.Caller(1)
+
+	funcName := runtime.FuncForPC(pt).Name()
 
 	return es{
 		err:  errors.New(msg),
 		file: file,
+		fn:   funcName,
 		line: line,
 	}
 }
 
 func Wrap(err error) error {
-	_, file, line, _ := runtime.Caller(1)
+	pt, file, line, _ := runtime.Caller(1)
+
+	funcName := runtime.FuncForPC(pt).Name()
 
 	return es{
 		err:  err,
 		file: file,
+		fn:   funcName,
 		line: line,
 	}
 }
@@ -41,6 +47,7 @@ func Wrap(err error) error {
 type es struct {
 	err  error
 	file string
+	fn   string
 	line int
 }
 
@@ -58,7 +65,7 @@ func (e es) Errors() []string {
 	current := e
 
 	for {
-		res = append(res, fmt.Sprintf("%v %v", current.file, current.line))
+		res = append(res, fmt.Sprintf("%v %v %v", current.file, current.fn, current.line))
 		if errors.As(current.err, &tmp) {
 			current = tmp
 		} else {
