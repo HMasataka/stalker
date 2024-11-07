@@ -19,7 +19,7 @@ func A(ctx context.Context, id int, name string) {}
 		panic(err)
 	}
 
-	functions := getFunctions(f)
+	functions := listFunctions(f)
 
 	for _, fn := range functions {
 		for _, param := range fn.Type.Params.List {
@@ -50,7 +50,7 @@ func A(ctx context.Context, id int, name string) {}
 	}
 }
 
-func getFunctions(f *ast.File) []*ast.FuncDecl {
+func listFunctions(f *ast.File) []*ast.FuncDecl {
 	var functions []*ast.FuncDecl
 
 	for _, decl := range f.Decls {
