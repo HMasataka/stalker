@@ -2,72 +2,60 @@ package main
 
 import (
 	"fmt"
-	"runtime"
-	"strings"
-
-	"github.com/samber/lo"
-
-	"errors"
+	"go/ast"
+	"go/parser"
+	"go/token"
 )
 
 func main() {
-	err := New("error")
-	fmt.Println(err)
+	src := `
+package main
+func A(ctx context.Context, id int, name string) {}
+`
+	fs := token.NewFileSet()
 
-	w := Wrap(err)
-	fmt.Println(w)
-}
-
-func New(msg string) error {
-	return newError(errors.New(msg))
-}
-
-func Wrap(err error) error {
-	return newError(err)
-}
-
-func newError(err error) error {
-	pt, file, line, _ := runtime.Caller(2)
-
-	funcName := runtime.FuncForPC(pt).Name()
-
-	return stalker{
-		err:  err,
-		file: file,
-		fn:   funcName,
-		line: line,
-	}
-}
-
-type stalker struct {
-	err  error
-	file string
-	fn   string
-	line int
-}
-
-func (s stalker) Error() string {
-	return strings.Join(s.Errors(), "\n")
-}
-
-func (s stalker) Unwrap() error {
-	return s.err
-}
-
-func (s stalker) Errors() []string {
-	var res []string
-	var tmp stalker
-	current := s
-
-	for {
-		res = append(res, fmt.Sprintf("%v %v %v", current.file, current.fn, current.line))
-		if errors.As(current.err, &tmp) {
-			current = tmp
-		} else {
-			res = append(res, current.err.Error())
-			break
-		}
+	f, err := parser.ParseFile(fs, "", src, 0)
+	if err != nil {
+		panic(err)
 	}
 
-	return lo.Reverse(res)
+	for _, decl := range f.Decls {
+		ast.Inspect(decl, func(node ast.Node) bool {
+			fn, ok := node.(*ast.FuncDecl)
+			if !ok {
+				fmt.Println(false)
+				return false
+			}
+
+			fmt.Println("func name : ", fn.Name.Name)
+
+			for _, param := range fn.Type.Params.List {
+				selector, isSelectorExpr := param.Type.(*ast.SelectorExpr)
+				ident, isIdent := param.Type.(*ast.Ident)
+
+				if !isSelectorExpr && !isIdent {
+					continue
+				}
+
+				if isSelectorExpr {
+					println("sel")
+					typeName := selector.Sel.Name
+					typ := selector.X.(*ast.Ident)
+					for _, name := range param.Names {
+						fmt.Printf("%s %s.%s\n", name.Name, typ, typeName)
+					}
+				}
+
+				if isIdent {
+					println("ident")
+					typeName := ident.Name
+					for _, name := range param.Names {
+						println(name.Name, typeName)
+					}
+				}
+			}
+
+			return false
+		})
+	}
 }
