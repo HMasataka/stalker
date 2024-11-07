@@ -22,7 +22,9 @@ func A(ctx context.Context, id int, name string) {}
 	functions := listFunctions(f)
 
 	for _, fn := range functions {
-		for _, param := range fn.Type.Params.List {
+		f := parseFn(fn)
+
+		for _, param := range f.Params {
 			selector, isSelectorExpr := param.Type.(*ast.SelectorExpr)
 			ident, isIdent := param.Type.(*ast.Ident)
 
@@ -47,6 +49,18 @@ func A(ctx context.Context, id int, name string) {}
 				}
 			}
 		}
+	}
+}
+
+type Fn struct {
+	Name   string
+	Params []*ast.Field
+}
+
+func parseFn(f *ast.FuncDecl) Fn {
+	return Fn{
+		Name:   f.Name.Name,
+		Params: f.Type.Params.List,
 	}
 }
 
