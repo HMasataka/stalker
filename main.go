@@ -19,43 +19,52 @@ func A(ctx context.Context, id int, name string) {}
 		panic(err)
 	}
 
+	functions := getFunctions(f)
+
+	for _, fn := range functions {
+		for _, param := range fn.Type.Params.List {
+			selector, isSelectorExpr := param.Type.(*ast.SelectorExpr)
+			ident, isIdent := param.Type.(*ast.Ident)
+
+			if !isSelectorExpr && !isIdent {
+				continue
+			}
+
+			if isSelectorExpr {
+				println("sel")
+				typeName := selector.Sel.Name
+				typ := selector.X.(*ast.Ident)
+				for _, name := range param.Names {
+					fmt.Printf("%s %s.%s\n", name.Name, typ, typeName)
+				}
+			}
+
+			if isIdent {
+				println("ident")
+				typeName := ident.Name
+				for _, name := range param.Names {
+					println(name.Name, typeName)
+				}
+			}
+		}
+	}
+}
+
+func getFunctions(f *ast.File) []*ast.FuncDecl {
+	var functions []*ast.FuncDecl
+
 	for _, decl := range f.Decls {
 		ast.Inspect(decl, func(node ast.Node) bool {
 			fn, ok := node.(*ast.FuncDecl)
 			if !ok {
-				fmt.Println(false)
 				return false
 			}
 
-			fmt.Println("func name : ", fn.Name.Name)
-
-			for _, param := range fn.Type.Params.List {
-				selector, isSelectorExpr := param.Type.(*ast.SelectorExpr)
-				ident, isIdent := param.Type.(*ast.Ident)
-
-				if !isSelectorExpr && !isIdent {
-					continue
-				}
-
-				if isSelectorExpr {
-					println("sel")
-					typeName := selector.Sel.Name
-					typ := selector.X.(*ast.Ident)
-					for _, name := range param.Names {
-						fmt.Printf("%s %s.%s\n", name.Name, typ, typeName)
-					}
-				}
-
-				if isIdent {
-					println("ident")
-					typeName := ident.Name
-					for _, name := range param.Names {
-						println(name.Name, typeName)
-					}
-				}
-			}
+			functions = append(functions, fn)
 
 			return false
 		})
 	}
+
+	return functions
 }
