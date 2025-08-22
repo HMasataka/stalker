@@ -11,22 +11,32 @@ func (f *Frame) appendLocation(l *Location) *Frame {
 	return f
 }
 
-func NewFrame() *Frame {
-	var fs [3]uintptr
-
-	runtime.Callers(1, fs[:])
-
-	location := NewLocation(fs)
+func NewFrame(opts ...Option) *Frame {
+	location := newLocation(opts...)
 
 	return &Frame{
 		Locations: []*Location{location},
 	}
 }
 
-func Wrap(original *Frame) *Frame {
+func Wrap(original *Frame, opts ...Option) *Frame {
+	location := newLocation(opts...)
+
+	return original.appendLocation(location)
+}
+
+func newLocation(opts ...Option) *Location {
 	var fs [3]uintptr
 
-	runtime.Callers(1, fs[:])
+	op := &Options{
+		skipFrames: 1,
+	}
 
-	return original.appendLocation(NewLocation(fs))
+	for _, opt := range opts {
+		opt(op)
+	}
+
+	runtime.Callers(op.skipFrames, fs[:])
+
+	return NewLocation(fs)
 }
